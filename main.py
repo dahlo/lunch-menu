@@ -33,6 +33,8 @@ Main script for choosing what restaurant parsers to use
 
 import os
 import sys
+from multiprocessing.dummy import Pool as ThreadPool
+from itertools import repeat
 
 import parser as ps
 
@@ -71,6 +73,15 @@ KI = ('jorpes', 'glada', 'haga', 'hjulet', 'jons',
       'livet', 'nanna', 'svarta')
 
 UU = ('bikupan', 'dufva', 'hubben', 'rudbeck', 'tallrik')
+
+
+def activate_parsers_multithreader(restaurants, restaurant_data):
+    '''
+    Run the parsers in parallell
+    '''
+    pool = ThreadPool(8)
+    output = pool.starmap(activate_parsers, zip([ [resturant] for resturant in restaurants], repeat(restaurant_data)))
+    return '\n'.join(output)
 
 
 def activate_parsers(restaurants, restaurant_data):
@@ -197,7 +208,7 @@ if __name__ == '__main__':
     elif 'uu'in sys.argv[1:]:
         REST_NAMES_IN += UU
     else:
-        REST_NAMES_IN = [param for param in sys.argv[1:] if param != '-r']
+        REST_NAMES_IN = [param for param in sys.argv[1:] if param not in ['-r', 'multithread']]
 
     try:
         REST_NAMES = parse_restaurant_names(REST_NAMES_IN)
@@ -208,5 +219,8 @@ if __name__ == '__main__':
 
     # print the menus
     print('\n'.join(page_start(ps.get_weekday(), str(ps.get_day()), ps.get_month())))
-    print(activate_parsers(REST_NAMES, REST_DATA))
+    if 'multithread' in sys.argv[1:]:
+        print(activate_parsers_multithreader(REST_NAMES, REST_DATA))
+    else:
+        print(activate_parsers(REST_NAMES, REST_DATA))
     print('\n'.join(page_end()))
